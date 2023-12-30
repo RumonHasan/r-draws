@@ -53,6 +53,7 @@ const Excaliboy = () => {
               <div className="sidebar-options">
                 <div className="option">
                   <input
+                    checked={optionsDisplayModeEnabled}
                     type="checkbox"
                     value={optionsDisplayModeEnabled}
                     onChange={() =>
