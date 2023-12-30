@@ -1,6 +1,13 @@
-import { Excalidraw, Footer, Sidebar } from '@excalidraw/excalidraw';
+import {
+  Excalidraw,
+  Footer,
+  Sidebar,
+  exportToCanvas,
+} from '@excalidraw/excalidraw';
 import { useEffect, useState } from 'react';
 import './Excalistyles.css';
+import initialData from './initialData';
+import { nanoid } from 'nanoid';
 
 const customTabs = [
   {
@@ -16,22 +23,82 @@ const customTabs = [
 const Excaliboy = () => {
   const [excalidrawApi, setExcalidrawApi] = useState(null);
   const [currDrawState, setCurrDrawState] = useState(null);
+  const [imageCollection, setImageCollection] = useState([]);
+  const [exportWithDarkMode, setExportWithDarkMode] = useState(false);
   const [docked, setDocked] = useState(false);
   const [optionsDisplayModeEnabled, setOptionsDisplayModeEnabled] =
     useState(false);
+  const [canvasUrl, setCanvasUrl] = useState(null);
+
+  useEffect(() => {
+    if (canvasUrl) {
+      setImageCollection((prevImageUrls) => [
+        ...prevImageUrls,
+        {
+          id: nanoid(),
+          imageUrl: canvasUrl,
+        },
+      ]);
+    }
+  }, [canvasUrl]);
 
   useEffect(() => {
     if (!excalidrawApi) {
-      console.log('api still loading');
       return;
     }
   }, [excalidrawApi]);
 
-  useEffect(() => {
-    if (currDrawState) {
-      console.log(currDrawState);
+  // function to export drawn state and images to canvas
+  const exportToCanvasFile = async () => {
+    if (!excalidrawApi) {
+      return;
     }
-  }, [currDrawState]);
+    if (excalidrawApi) {
+      const elements = excalidrawApi.getSceneElements();
+      if (!elements || !elements.length) {
+        return;
+      }
+      const originalCanvas = await exportToCanvas({
+        elements,
+        appState: {
+          ...initialData.appState,
+          viewBackgroundColor: '#121212',
+          exportWithDarkMode,
+        },
+        files: excalidrawApi.getFiles(),
+        getDimensions: () => {
+          return { width: 350, height: 350 };
+        },
+      });
+      // Create a new canvas with reduced size
+      const resizedCanvas = document.createElement('canvas');
+      const resizedContext = resizedCanvas.getContext('2d');
+
+      // Set the desired dimensions for the resized image
+      const resizedWidth = 200; // Adjust this based on your needs
+      const resizedHeight = 200; // Adjust this based on your needs
+
+      resizedCanvas.width = resizedWidth;
+      resizedCanvas.height = resizedHeight;
+
+      // Draw the original image onto the resized canvas
+      resizedContext.drawImage(
+        originalCanvas,
+        0,
+        0,
+        originalCanvas.width,
+        originalCanvas.height,
+        0,
+        0,
+        resizedWidth,
+        resizedHeight
+      );
+
+      // Convert the resized canvas to a data URL
+      const resizedCanvasUrl = resizedCanvas.toDataURL();
+      setCanvasUrl(resizedCanvasUrl);
+    }
+  };
 
   return (
     <div
@@ -45,6 +112,7 @@ const Excaliboy = () => {
         excalidrawAPI={(api) => setExcalidrawApi(api)}
         onChange={(currentState) => setCurrDrawState(currentState)}
         viewModeEnabled={optionsDisplayModeEnabled}
+        theme="dark"
       >
         <Sidebar name="custom" docked={docked} onDock={setDocked}>
           <Sidebar.Header>Additional Options</Sidebar.Header>
@@ -65,6 +133,14 @@ const Excaliboy = () => {
                       ? 'Show Options'
                       : 'Hide Options'}
                   </span>
+                </div>
+                <div className="option">
+                  <button
+                    onClick={exportToCanvasFile}
+                    className="custom-button"
+                  >
+                    Export To Canvas
+                  </button>
                 </div>
               </div>
             </Sidebar.Tab>
@@ -95,6 +171,22 @@ const Excaliboy = () => {
           </Sidebar.Trigger>
         </Footer>
       </Excalidraw>
+
+      {imageCollection.length > 0 && (
+        <div className="image-container">
+          {imageCollection?.map((currImageSrc) => {
+            const { imageUrl, id } = currImageSrc;
+            return (
+              <img
+                key={id}
+                className="responsive-image"
+                src={imageUrl}
+                alt="something"
+              />
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

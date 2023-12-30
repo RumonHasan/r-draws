@@ -2,9 +2,30 @@
   display: flex;
   justify-content: start;
   flex-direction: column;
+  gap: 16px;
 }
 
 .option {
   display: flex;
   gap: 10px;
+}
+
+.custom-button {
+  padding: 10px;
+  background: #70b1ec;
+  color: white;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+}
+
+.image-container {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.responsive-image {
+  height: 100%;
+  width: 100%;
 }
